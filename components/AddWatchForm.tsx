@@ -20,10 +20,20 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eventName || !venueName || !date || !targetPrice || !numTickets) {
-        setError('Please fill out all fields.');
-        return;
+    
+    const missingFields: string[] = [];
+    if (!eventName) missingFields.push('Event Name');
+    if (!venueName) missingFields.push('Venue');
+    if (!venueLocation) missingFields.push('Venue Location');
+    if (!date) missingFields.push('Date');
+    if (!targetPrice) missingFields.push('Target Price ($)');
+    if (!numTickets) missingFields.push('Number of Tickets');
+
+    if (missingFields.length > 0) {
+      setError(`Please fill in the following required fields: ${missingFields.join(', ')}.`);
+      return;
     }
+
     setError(null);
     setIsSubmitting(true);
     
@@ -57,7 +67,7 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
             onChange={(e) => setEventName(e.target.value)}
             placeholder="e.g., Taylor Swift: The Eras Tour"
             className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            required
+            
           />
         </div>
         <div>
@@ -69,7 +79,7 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
             onChange={(e) => setVenueName(e.target.value)}
             placeholder="e.g., SoFi Stadium"
             className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            required
+            
           />
         </div>
         <div>
@@ -81,7 +91,7 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
             onChange={(e) => setVenueLocation(e.target.value)}
             placeholder="e.g., Inglewood, CA"
             className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            required
+            
           />
         </div>
         <div>
@@ -92,7 +102,7 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            required
+            
           />
         </div>
         <div>
@@ -105,7 +115,7 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
             placeholder="e.g., 350"
             min="0"
             className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            required
+            
           />
         </div>
         <div className="md:col-span-2">
@@ -117,10 +127,10 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
                 onChange={(e) => setNumTickets(e.target.value)}
                 min="1"
                 className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-                required
+                
             />
         </div>
-        {error && <p className="text-red-400 md:col-span-2 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-400 md:col-span-2 text-sm text-center bg-red-900/20 py-2 px-4 rounded-md border border-red-500/30">{error}</p>}
         <div className="md:col-span-2 flex justify-end items-center gap-4 mt-4">
           <button
             type="button"

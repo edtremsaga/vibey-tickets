@@ -1,4 +1,4 @@
-// Fix: Define and export the EventWatch interface based on its usage in the application.
+
 export interface EventWatch {
   id: string;
   eventName: string;
