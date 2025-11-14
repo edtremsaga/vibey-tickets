@@ -3,6 +3,7 @@ import { EventWatch } from '../types';
 import RefreshIcon from './icons/RefreshIcon';
 import TrashIcon from './icons/TrashIcon';
 import LoadingSpinner from './LoadingSpinner';
+import { formatEventDate, formatLastChecked } from '../utils/date';
 
 interface WatchCardProps {
   watch: EventWatch;
@@ -40,15 +41,8 @@ const WatchCard: React.FC<WatchCardProps> = ({ watch, onRefresh, onDelete, isRef
   const { eventName, venueName, venueLocation, date, targetPrice, numTickets, currentPrice, broker, status, lastChecked } = watch;
   const config = statusConfig[status];
 
-  const formattedDate = new Date(date).toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC' // Treat date string as UTC to avoid off-by-one day errors
-  });
-
-  const timeSinceCheck = lastChecked ? new Date(lastChecked).toLocaleString() : 'Never';
+  const formattedDate = formatEventDate(date);
+  const timeSinceCheck = formatLastChecked(lastChecked);
   
   const priceDifference = currentPrice - targetPrice;
   const isPriceGood = priceDifference <= 0;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { EventWatch } from '../types';
 import PlusIcon from './icons/PlusIcon';
 import LoadingSpinner from './LoadingSpinner';
+import { validateWatchForm } from '../utils/validation';
 
 interface AddWatchFormProps {
   onAddWatch: (watchData: Omit<EventWatch, 'id' | 'currentPrice' | 'broker' | 'status' | 'lastChecked'>) => Promise<void>;
@@ -21,16 +22,18 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const missingFields: string[] = [];
-    if (!eventName) missingFields.push('Event Name');
-    if (!venueName) missingFields.push('Venue');
-    if (!venueLocation) missingFields.push('Venue Location');
-    if (!date) missingFields.push('Date');
-    if (!targetPrice) missingFields.push('Target Price ($)');
-    if (!numTickets) missingFields.push('Number of Tickets');
+    // Use validation utility
+    const validation = validateWatchForm({
+      eventName,
+      venueName,
+      venueLocation,
+      date,
+      targetPrice,
+      numTickets,
+    });
 
-    if (missingFields.length > 0) {
-      setError(`Please fill in the following required fields: ${missingFields.join(', ')}.`);
+    if (!validation.isValid) {
+      setError(validation.errors.join('. '));
       return;
     }
 
@@ -39,17 +42,23 @@ const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
     
     try {
         await onAddWatch({
-            eventName,
-            venueName,
-            venueLocation,
+            eventName: eventName.trim(),
+            venueName: venueName.trim(),
+            venueLocation: venueLocation.trim(),
             date,
             targetPrice: parseFloat(targetPrice),
             numTickets: parseInt(numTickets, 10),
         });
-        // Parent component will close the modal
+        // Reset form on success
+        setEventName('');
+        setVenueName('');
+        setVenueLocation('');
+        setDate('');
+        setTargetPrice('');
+        setNumTickets('1');
     } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-        setIsSubmitting(false); // only keep submitting state on success
+        setIsSubmitting(false);
     }
   };
 

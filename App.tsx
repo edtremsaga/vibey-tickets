@@ -2,44 +2,53 @@ import React, { useState, useEffect } from 'react';
 import { EventWatch } from './types';
 import AddWatchForm from './components/AddWatchForm';
 import WatchCard from './components/WatchCard';
-import { createInitialWatchData, fetchPriceUpdate } from './services/geminiService';
+import { apiService } from './services/apiService';
 import PlusIcon from './components/icons/PlusIcon';
 import Introduction from './components/Introduction';
 import ConfirmationModal from './components/ConfirmationModal';
+import { loadWatchesFromStorage, saveWatchesToStorage } from './utils/storage';
 
 const App: React.FC = () => {
   const [watches, setWatches] = useState<EventWatch[]>(() => {
-    try {
-      const savedWatches = localStorage.getItem('ticketWatches');
-      return savedWatches ? JSON.parse(savedWatches) : [];
-    } catch (error) {
-      console.error("Failed to parse watches from localStorage", error);
-      return [];
-    }
+    return loadWatchesFromStorage();
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loadingWatches, setLoadingWatches] = useState<Set<string>>(new Set());
   const [watchToDelete, setWatchToDelete] = useState<EventWatch | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('ticketWatches', JSON.stringify(watches));
+    const success = saveWatchesToStorage(watches);
+    if (!success) {
+      setError('Failed to save watches to storage. Your data may not persist.');
+      // Clear error after 5 seconds
+      setTimeout(() => setError(null), 5000);
+    }
   }, [watches]);
 
   const handleAddWatch = async (watchData: Omit<EventWatch, 'id' | 'currentPrice' | 'broker' | 'status' | 'lastChecked'>) => {
-    const { currentPrice, broker } = await createInitialWatchData(watchData);
-    
-    const newWatch: EventWatch = {
-      ...watchData,
-      id: crypto.randomUUID(),
-      currentPrice,
-      broker,
-      status: currentPrice <= watchData.targetPrice ? 'alert' : 'watching',
-      lastChecked: new Date().toISOString(),
-    };
+    try {
+      setError(null);
+      const { currentPrice, broker } = await apiService.createWatch(watchData);
+      
+      const newWatch: EventWatch = {
+        ...watchData,
+        id: crypto.randomUUID(),
+        currentPrice,
+        broker,
+        status: currentPrice <= watchData.targetPrice ? 'alert' : 'watching',
+        lastChecked: new Date().toISOString(),
+      };
 
-    setWatches(prevWatches => [newWatch, ...prevWatches]);
-    setIsAddModalOpen(false);
+      setWatches(prevWatches => [newWatch, ...prevWatches]);
+      setIsAddModalOpen(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create watch. Please try again.';
+      setError(errorMessage);
+      console.error('Error adding watch:', err);
+      throw err; // Re-throw so form can handle it
+    }
   };
 
   const handleRefreshWatch = async (id: string) => {
@@ -49,7 +58,7 @@ const App: React.FC = () => {
     setLoadingWatches(prev => new Set(prev).add(id));
     
     try {
-      const { currentPrice, broker } = await fetchPriceUpdate(watchToUpdate);
+      const { currentPrice, broker } = await apiService.updateWatchPrice(watchToUpdate);
       setWatches(prevWatches => 
         prevWatches.map(w => 
           w.id === id 
@@ -103,6 +112,11 @@ const App: React.FC = () => {
           <p className="text-gray-400 max-w-2xl mx-auto">
             Never miss a price drop. Set your target price for any event, and let our AI-powered watcher alert you when it's time to buy.
           </p>
+          {error && (
+            <div className="mt-4 max-w-2xl mx-auto bg-red-900/20 border border-red-500/30 text-red-300 px-4 py-2 rounded-md text-sm">
+              {error}
+            </div>
+          )}
         </header>
 
         <div className="text-center mb-10">
