@@ -44,7 +44,10 @@ export const createInitialWatchData = async (
       },
     });
 
-    const jsonText = response.text.trim();
+    const jsonText = response.text?.trim();
+    if (!jsonText) {
+      throw new Error("No response text from Gemini API");
+    }
     return JSON.parse(jsonText);
 
   } catch (error) {
@@ -76,7 +79,10 @@ export const fetchPriceUpdate = async (
         },
       });
   
-      const jsonText = response.text.trim();
+      const jsonText = response.text?.trim();
+      if (!jsonText) {
+        throw new Error("No response text from Gemini API");
+      }
       return JSON.parse(jsonText);
   
     } catch (error) {

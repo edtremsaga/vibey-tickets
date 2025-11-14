@@ -1,0 +1,3 @@
+module.exports=[33290,a=>{"use strict";var b=a.i(7997);function c({children:a}){return(0,b.jsx)("html",{lang:"en",children:(0,b.jsx)("body",{className:"bg-gray-900 text-white min-h-screen font-sans",children:a})})}a.s(["default",()=>c,"metadata",0,{title:"Vibey Tickets",description:"A smart price-watching application that helps budget-conscious fans track ticket prices for live events"}])}];
+
+//# sourceMappingURL=app_layout_tsx_271801d7._.js.map
