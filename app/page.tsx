@@ -11,27 +11,29 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { loadWatchesFromStorage, saveWatchesToStorage } from '../utils/storage';
 
 export default function Home() {
-  const [watches, setWatches] = useState<EventWatch[]>(() => {
-    if (typeof window !== 'undefined') {
-      return loadWatchesFromStorage();
-    }
-    return [];
-  });
-
+  const [watches, setWatches] = useState<EventWatch[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loadingWatches, setLoadingWatches] = useState<Set<string>>(new Set());
   const [watchToDelete, setWatchToDelete] = useState<EventWatch | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Load watches from localStorage after mount to prevent hydration mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setIsMounted(true);
+    const loadedWatches = loadWatchesFromStorage();
+    setWatches(loadedWatches);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
       const success = saveWatchesToStorage(watches);
       if (!success) {
         setError('Failed to save watches to storage. Your data may not persist.');
         setTimeout(() => setError(null), 5000);
       }
     }
-  }, [watches]);
+  }, [watches, isMounted]);
 
   const handleAddWatch = async (watchData: Omit<EventWatch, 'id' | 'currentPrice' | 'broker' | 'status' | 'lastChecked'>) => {
     try {
@@ -110,14 +112,11 @@ export default function Home() {
 
   return (
     <div className="bg-gray-900 text-white min-h-screen font-sans">
-      <main className="container mx-auto px-4 py-8">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 mb-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
             Vibey Tickets
           </h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Never miss a price drop. Set your target price for any event, and let our AI-powered watcher alert you when it's time to buy.
-          </p>
           {error && (
             <div className="mt-4 max-w-2xl mx-auto bg-red-900/20 border border-red-500/30 text-red-300 px-4 py-2 rounded-md text-sm">
               {error}
@@ -125,19 +124,20 @@ export default function Home() {
           )}
         </header>
 
-        <div className="text-center mb-10">
+        <Introduction />
+
+        <div className="text-center mb-8">
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex mx-auto items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform hover:scale-105 flex items-center mx-auto"
+            aria-label="Add new watch"
           >
-            <PlusIcon className="w-5 h-5"/>
+            <PlusIcon className="w-5 h-5 mr-2" />
             Add New Watch
           </button>
         </div>
-
-        {watches.length === 0 ? (
-          <Introduction />
-        ) : (
+        
+        {watches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {watches.map(watch => (
               <WatchCard 
@@ -149,26 +149,30 @@ export default function Home() {
               />
             ))}
           </div>
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-gray-400">You're not watching any events yet.</p>
+            <p className="text-gray-500 text-sm mt-2">Click "Add New Watch" to get started.</p>
+          </div>
+        )}
+
+        {isAddModalOpen && (
+          <AddWatchForm onAddWatch={handleAddWatch} onClose={() => setIsAddModalOpen(false)} />
         )}
         
-      </main>
-
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-           <AddWatchForm onAddWatch={handleAddWatch} onClose={() => setIsAddModalOpen(false)} />
-        </div>
-      )}
-
-      {watchToDelete && (
         <ConfirmationModal
           isOpen={!!watchToDelete}
           onClose={closeDeleteModal}
           onConfirm={handleDeleteWatch}
           title="Delete Watch"
         >
-          Are you sure you want to delete the watch for <span className="font-bold">{watchToDelete.eventName}</span>? This action cannot be undone.
+          <p>Are you sure you want to stop watching this event? This action cannot be undone.</p>
         </ConfirmationModal>
-      )}
+
+      </main>
+      <footer className="text-center py-4 mt-8 border-t border-gray-800">
+        <p className="text-xs text-gray-600">Your watches are saved locally in this browser.</p>
+      </footer>
 
     </div>
   );

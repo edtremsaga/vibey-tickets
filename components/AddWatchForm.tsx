@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { EventWatch } from '../types';
-import PlusIcon from './icons/PlusIcon';
 import LoadingSpinner from './LoadingSpinner';
 import { validateWatchForm } from '../utils/validation';
 
@@ -10,154 +9,118 @@ interface AddWatchFormProps {
 }
 
 const AddWatchForm: React.FC<AddWatchFormProps> = ({ onAddWatch, onClose }) => {
-  const [eventName, setEventName] = useState('');
-  const [venueName, setVenueName] = useState('');
-  const [venueLocation, setVenueLocation] = useState('');
-  const [date, setDate] = useState('');
-  const [targetPrice, setTargetPrice] = useState('');
-  const [numTickets, setNumTickets] = useState('1');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    eventName: '',
+    venueName: '',
+    venueLocation: '',
+    date: '',
+    targetPrice: '',
+    numTickets: '1',
+  });
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Use validation utility
-    const validation = validateWatchForm({
-      eventName,
-      venueName,
-      venueLocation,
-      date,
-      targetPrice,
-      numTickets,
+    const missingFields: string[] = [];
+    (Object.keys(formData) as Array<keyof typeof formData>).forEach((key) => {
+        if (formData[key].trim() === '') {
+            let fieldName = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            if (key === 'eventName') fieldName = 'Event Name';
+            if (key === 'venueName') fieldName = 'Event Venue';
+            if (key === 'venueLocation') fieldName = 'Venue Location';
+            if (key === 'targetPrice') fieldName = 'Target Price';
+            if (key === 'numTickets') fieldName = '# of Tickets';
+            missingFields.push(fieldName);
+        }
     });
 
-    if (!validation.isValid) {
-      setError(validation.errors.join('. '));
-      return;
+    if (missingFields.length > 0) {
+        setError(`Please fill in the following required fields: ${missingFields.join(', ')}.`);
+        return;
     }
 
     setError(null);
     setIsSubmitting(true);
-    
     try {
         await onAddWatch({
-            eventName: eventName.trim(),
-            venueName: venueName.trim(),
-            venueLocation: venueLocation.trim(),
-            date,
-            targetPrice: parseFloat(targetPrice),
-            numTickets: parseInt(numTickets, 10),
+            ...formData,
+            eventName: formData.eventName.trim(),
+            venueName: formData.venueName.trim(),
+            venueLocation: formData.venueLocation.trim(),
+            targetPrice: parseFloat(formData.targetPrice),
+            numTickets: parseInt(formData.numTickets, 10),
         });
-        // Reset form on success
-        setEventName('');
-        setVenueName('');
-        setVenueLocation('');
-        setDate('');
-        setTargetPrice('');
-        setNumTickets('1');
-    } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+        // Reset form
+        setFormData({
+          eventName: '',
+          venueName: '',
+          venueLocation: '',
+          date: '',
+          targetPrice: '',
+          numTickets: '1',
+        });
+    } catch (formError) {
+        setError('An unexpected error occurred while creating the watch. Please try again.');
+        console.error(formError);
         setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="relative max-w-2xl w-full mx-auto bg-gray-800 p-6 sm:p-8 rounded-2xl border border-gray-700 shadow-2xl">
-      <h2 className="text-2xl font-bold text-white mb-1">Add New Watch</h2>
-      <p className="text-gray-400 mb-6">Enter event details to start tracking.</p>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2">
-          <label htmlFor="eventName" className="block text-sm font-medium text-gray-300 mb-1">Event Name</label>
-          <input
-            type="text"
-            id="eventName"
-            value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
-            placeholder="e.g., Taylor Swift: The Eras Tour"
-            className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            
-          />
-        </div>
-        <div>
-          <label htmlFor="venueName" className="block text-sm font-medium text-gray-300 mb-1">Venue</label>
-          <input
-            type="text"
-            id="venueName"
-            value={venueName}
-            onChange={(e) => setVenueName(e.target.value)}
-            placeholder="e.g., SoFi Stadium"
-            className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            
-          />
-        </div>
-        <div>
-          <label htmlFor="venueLocation" className="block text-sm font-medium text-gray-300 mb-1">Venue Location</label>
-          <input
-            type="text"
-            id="venueLocation"
-            value={venueLocation}
-            onChange={(e) => setVenueLocation(e.target.value)}
-            placeholder="e.g., Inglewood, CA"
-            className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            
-          />
-        </div>
-        <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-300 mb-1">Date</label>
-          <input
-            type="date"
-            id="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            
-          />
-        </div>
-        <div>
-          <label htmlFor="targetPrice" className="block text-sm font-medium text-gray-300 mb-1">Target Price ($)</label>
-          <input
-            type="number"
-            id="targetPrice"
-            value={targetPrice}
-            onChange={(e) => setTargetPrice(e.target.value)}
-            placeholder="e.g., 350"
-            min="0"
-            className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-            
-          />
-        </div>
-        <div className="md:col-span-2">
-           <label htmlFor="numTickets" className="block text-sm font-medium text-gray-300 mb-1">Number of Tickets</label>
-            <input
-                type="number"
-                id="numTickets"
-                value={numTickets}
-                onChange={(e) => setNumTickets(e.target.value)}
-                min="1"
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500 transition"
-                
-            />
-        </div>
-        {error && <p className="text-red-400 md:col-span-2 text-sm text-center bg-red-900/20 py-2 px-4 rounded-md border border-red-500/30">{error}</p>}
-        <div className="md:col-span-2 flex justify-end items-center gap-4 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-white font-medium py-3 px-4 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            type="submit"
-            disabled={isSubmitting}
-            className="flex justify-center items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-900 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all duration-300"
-          >
-            {isSubmitting ? <LoadingSpinner /> : <PlusIcon className="w-5 h-5" />}
-            <span>{isSubmitting ? 'Adding...' : 'Add Watch'}</span>
-          </button>
-        </div>
-      </form>
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40" onClick={onClose}>
+      <div className="relative max-w-lg w-full mx-auto bg-gray-800 p-6 sm:p-8 rounded-2xl border border-gray-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <h2 className="text-2xl font-bold text-white mb-2">Add New Watch</h2>
+        <p className="text-gray-400 mb-6">Enter event details to start tracking.</p>
+
+        <form onSubmit={handleSubmit} noValidate>
+          {error && <p className="bg-red-900/50 text-red-300 border border-red-700 rounded-lg p-3 mb-4 text-sm">{error}</p>}
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="eventName" className="block text-sm font-medium text-gray-300 mb-1">Event Name</label>
+              <input type="text" id="eventName" name="eventName" value={formData.eventName} onChange={handleChange} className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="venueName" className="block text-sm font-medium text-gray-300 mb-1">Event Venue</label>
+                  <input type="text" id="venueName" name="venueName" value={formData.venueName} onChange={handleChange} className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label htmlFor="venueLocation" className="block text-sm font-medium text-gray-300 mb-1">Venue Location</label>
+                  <input type="text" id="venueLocation" name="venueLocation" placeholder="e.g., Seattle, WA" value={formData.venueLocation} onChange={handleChange} className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500" />
+                </div>
+            </div>
+            <div>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-300 mb-1">Event Date</label>
+                <input type="date" id="date" name="date" value={formData.date} onChange={handleChange} className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="targetPrice" className="block text-sm font-medium text-gray-300 mb-1">Target Price ($)</label>
+                    <input type="number" id="targetPrice" name="targetPrice" value={formData.targetPrice} onChange={handleChange} className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500" min="0" />
+                </div>
+                <div>
+                    <label htmlFor="numTickets" className="block text-sm font-medium text-gray-300 mb-1"># of Tickets</label>
+                    <input type="number" id="numTickets" name="numTickets" value={formData.numTickets} onChange={handleChange} className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500" min="1" />
+                </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4 mt-8">
+            <button type="button" onClick={onClose} className="text-gray-400 hover:text-white font-medium py-2 px-4 rounded-lg">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-purple-800 disabled:cursor-not-allowed flex items-center">
+              {isSubmitting && <LoadingSpinner className="w-5 h-5 -ml-1 mr-2" />}
+              {isSubmitting ? 'Adding...' : 'Add Watch'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
